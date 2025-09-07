@@ -1,57 +1,62 @@
 # Local Web App Hub
 
-ローカルで動作中のHTTP/HTTPSサーバ（localhost）を自動検出し、一覧表示するシンプルなHubです。
-リンクをクリックすると、対象のポートへそのままアクセスします（プロキシはしません）。
+ローカルで動作中の HTTP/HTTPS サービス（localhost 上）を自動検出し、一覧表示するシンプルなハブです。リンクをクリックすると対象のポートへ直接アクセスします（プロキシ処理は行いません）。
 
-## インストール / 起動（ユーザーsystemd）
+### 特徴
+- ローカルで稼働中の Web アプリを自動検出して一覧表示
+- クリックでそのまま対象へアクセス（プロキシなし）
+- 単一バイナリ＋ユーザー systemd で常駐可能（root 不要）
 
-最小・推奨の導入は「ユーザーsystemd」での常駐です。root不要、ログイン外でも稼働。
+### 動作環境
+- Linux（ユーザー systemd が利用可能な環境）
+- Go 1.23 以上がインストール済み（`install.sh` が `go install` を実行します）
 
-- クイックインストール（推奨）
-  - `bash install.sh`
-  - これで以下を自動実行します:
-  - 確認/ログ: `systemctl --user status local-webapp-hub`
+### インストール / 起動
+- `bash install.sh`
+- 起動確認: `systemctl --user status local-webapp-hub -n 20`
+- アクセス: `http://localhost:8787`
 
-アンインストール（ユーザー）
+### 使い方
+- ブラウザで `http://localhost:8787` を開くと、現在ローカルで応答のあるポートが一覧表示されます。
+- アクセス時にフルスキャン（1〜65535）を行います。Hub 自身の待受ポートは自動で除外されます。
+
+### 設定（フラグ）
+- `-addr`（既定: `:8787`）: Hub の待受アドレス/ポート
+  - ユーザー systemd のユニットを編集して変更できます（例: `systemctl --user edit local-webapp-hub.service`）。
+
+### 更新・バージョン固定インストール
+- 最新へ更新: `bash install.sh`（内部で `@latest` を使用）
+- バージョン指定: `bash install.sh -v vX.Y.Z` または `VERSION=vX.Y.Z bash install.sh`
+- 反映（稼働中の再読み込み）: `systemctl --user restart local-webapp-hub.service`
+
+### アンインストール
 - `systemctl --user disable --now local-webapp-hub.service`
 - `rm ~/.config/systemd/user/local-webapp-hub.service`
+- （必要に応じて）`systemctl --user daemon-reload`
+
+### 既知の制約 / 注意
+- 生成されるリンクは `http(s)://localhost:PORT/` 固定です。リモートから閲覧した場合は「閲覧者 PC の localhost」を指します。
+- 同一マシン上のブラウザからの利用を前提としています。公開用途でホスト名を反映したリンクが必要な場合はコード変更が必要です。
+
+---
+
+## プロジェクト構成
+- `cmd/local-webapp-hub/` エントリポイント（main）
+- `internal/server/` Echo の初期化とハンドラ、テンプレート埋め込み
+- `internal/scan/` ポートスキャンと検出ロジック
+- `internal/server/web/` HTML テンプレート（go:embed 対象）
 
 
-注意: 本アプリのリンクは `http(s)://localhost:PORT/` 固定のため、リモートから閲覧すると「閲覧者PCのlocalhost」を指します。同一マシンでの利用（ブラウザ→本アプリ）が前提です。公開用途で正しいホスト名リンクにしたい場合はコード変更が必要です。
-
-## ソースからのローカル実行（開発用途）
-
+## ソースからのローカル実行
 ビルド時にホームディレクトリ配下へ書き込めない環境でも動くよう、`GOCACHE` をカレント配下に設定しています。
 
 ```
-GOCACHE=$(pwd)/.gocache go run .
+GOCACHE=$(pwd)/.gocache go run ./cmd/local-webapp-hub
 ```
 
-起動後、ブラウザで `http://localhost:8787` を開いてください。
-`Ctrl+C` で安全に停止できます（グレースフルシャットダウン対応）。
-
-## 使い方
-
-- アクセス時に常にフルスキャン（`1-65535`）を行います。
-
-## 設定（フラグ）
-
-- `-addr`（既定: `:8787`）
-  - Hubの待受アドレス/ポート。
-
-> メモ: Hub自身の待受ポートは走査対象から自動的に除外されます。
+起動後、ブラウザで `http://localhost:8787` を開いてください。`Ctrl+C` で安全に停止できます（グレースフルシャットダウン対応）。
 
 ## 検出仕様
-
-- 各ポートに対して、HTTP/HTTPSの`GET /`で応答の有無を判定します（HTTPクライアントのみで実施）。
-- HTTPSは自己署名証明書を許容します（検出のため `InsecureSkipVerify` を使用）。
-- HTMLの`<title>`が取得できた場合はそれをアプリ名として表示し、取得できない場合はURLを表示します（goquery使用）。
-
-## 必要なGoバージョン
-
-- Go 1.23 以上（go.modに記載。ツールチェーンは自動で1.24系へ切替済み）
-
-## HTTP周り（整理点）
-
-- ルーティング: `Echo` を使用（`github.com/labstack/echo/v4`）
-- 終了処理: OSシグナルでグレースフルシャットダウン
+- 各ポートに対して HTTP/HTTPS の `GET /` を実行し、応答の有無を判定（HTTP クライアントのみ）。
+- HTTPS は自己署名証明書を許容（検出のため `InsecureSkipVerify` を使用）。
+- HTML の `<title>` を取得できた場合はアプリ名として表示。取得できない場合は URL を表示（goquery 使用）。
