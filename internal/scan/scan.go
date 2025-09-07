@@ -1,4 +1,4 @@
-package main
+package scan
 
 import (
     "context"
@@ -24,36 +24,35 @@ type App struct {
 }
 
 const (
-    defaultTimeout = 150 * time.Millisecond
-    defaultWorkers = 2048
+    DefaultTimeout = 150 * time.Millisecond
+    DefaultWorkers = 2048
 )
 
 // Scanner はポート走査に必要な設定とHTTPクライアントを保持します。
 type Scanner struct {
-    timeout  time.Duration
-    workers  int
-    client   *http.Client
+    timeout time.Duration
+    workers int
+    client  *http.Client
 }
 
-func NewScanner(timeout time.Duration, workers int) *Scanner {
+func New(timeout time.Duration, workers int) *Scanner {
     if workers < 1 {
         workers = 1
     }
-    // HTTP/HTTPS共通トランスポート（HTTPSは自己署名許容）
     tr := &http.Transport{
-        TLSClientConfig:   &tls.Config{InsecureSkipVerify: true},
-        DialContext:       (&net.Dialer{Timeout: timeout}).DialContext,
+        TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+        DialContext:     (&net.Dialer{Timeout: timeout}).DialContext,
     }
     return &Scanner{
-        timeout:  timeout,
-        workers:  workers,
-        client:   &http.Client{Timeout: timeout * 4, Transport: tr},
+        timeout: timeout,
+        workers: workers,
+        client:  &http.Client{Timeout: timeout * 4, Transport: tr},
     }
 }
 
-var defaultScanner = NewScanner(defaultTimeout, defaultWorkers)
+func NewDefault() *Scanner { return New(DefaultTimeout, DefaultWorkers) }
 
-func portFromAddr(addr string) (int, bool) {
+func PortFromAddr(addr string) (int, bool) {
     parts := strings.Split(addr, ":")
     if len(parts) == 0 {
         return 0, false
@@ -122,4 +121,3 @@ func (s *Scanner) tryFetch(ctx context.Context, scheme string, port int) (string
     return "", true
 }
 
-// no custom redirect policy; default http.Client behavior is used

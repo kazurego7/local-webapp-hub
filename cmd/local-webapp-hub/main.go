@@ -11,15 +11,19 @@ import (
     "syscall"
     "time"
 
-    "github.com/labstack/echo/v4"
+    "github.com/kazurego7/local-webapp-hub/internal/scan"
+    "github.com/kazurego7/local-webapp-hub/internal/server"
+)
+
+var (
+    listenAddr = flag.String("addr", ":8787", "listen address, e.g. :8787")
 )
 
 func main() {
     flag.Parse()
 
-    e := echo.New()
-    e.Renderer = newRenderer()
-    e.GET("/", handleIndex)
+    s := scan.NewDefault()
+    e := server.New(s, *listenAddr)
 
     log.Printf("local-webapp-hub listening on %s", *listenAddr)
 
@@ -38,3 +42,4 @@ func main() {
     defer cancel()
     _ = e.Shutdown(shutdownCtx)
 }
+

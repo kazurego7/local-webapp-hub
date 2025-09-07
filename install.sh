@@ -1,6 +1,33 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+VERSION="${VERSION:-latest}"
+
+usage() {
+  cat <<USAGE
+Usage: bash install.sh [-v VERSION]
+
+Options:
+  -v, --version VERSION   インストールするバージョン（既定: latest）
+                          例: v0.1.3 / latest / main / <commit>
+
+環境変数:
+  VERSION                 上と同じ意味（指定がない場合は latest）
+USAGE
+}
+
+while [[ $# -gt 0 ]]; do
+  case "${1:-}" in
+    -v|--version)
+      [[ $# -ge 2 ]] || { echo "--version に値が必要です" >&2; exit 1; }
+      VERSION="$2"; shift 2 ;;
+    -h|--help)
+      usage; exit 0 ;;
+    *)
+      echo "未知のオプション: $1" >&2; usage; exit 1 ;;
+  esac
+done
+
 # 概要（ユーザーsystemd版、フラグなし・最小）：
 # - go install でバイナリ取得（@latest）して ~/.local/bin に配置
 # - ユーザーsystemdユニット (~/.config/systemd/user) を作成
@@ -21,8 +48,8 @@ if [[ -z "$BIN_DIR" ]]; then
 fi
 mkdir -p "$BIN_DIR"
 
-echo "[1/3] go install でバイナリ取得（出力先: $BIN_DIR）"
-GOBIN="$BIN_DIR" go install github.com/kazurego7/local-webapp-hub@latest
+echo "[1/3] go install でバイナリ取得（出力先: $BIN_DIR, バージョン: $VERSION)"
+GOBIN="$BIN_DIR" go install "github.com/kazurego7/local-webapp-hub/cmd/local-webapp-hub@${VERSION}"
 
 SERVICE_DIR="$HOME/.config/systemd/user"
 SERVICE_PATH="$SERVICE_DIR/local-webapp-hub.service"
@@ -60,3 +87,4 @@ echo "インストール完了"
 echo "- 実行ファイル: $BIN_DIR/local-webapp-hub"
 echo "- ユニット:     $SERVICE_PATH"
 echo "- 起動確認:     systemctl --user status local-webapp-hub -n 20"
+echo "- 既に稼働中の更新反映: systemctl --user restart local-webapp-hub.service"

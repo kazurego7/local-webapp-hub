@@ -1,4 +1,4 @@
-package main
+package server
 
 import (
     "embed"
@@ -21,3 +21,4 @@ func newRenderer() *TemplateRenderer {
 func (r *TemplateRenderer) Render(w io.Writer, name string, data interface{}, c echo.Context) error {
     return r.t.ExecuteTemplate(w, name, data)
 }
+
