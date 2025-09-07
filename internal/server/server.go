@@ -1,8 +1,11 @@
 package server
 
 import (
+    "net"
     "net/http"
+    "net/url"
     "sort"
+    "strconv"
     "time"
 
     "github.com/kazurego7/local-webapp-hub/internal/scan"
@@ -36,6 +39,15 @@ func New(scanner *scan.Scanner, listenAddr string) *echo.Echo {
 
         start := time.Now()
         apps := scanner.Scan(ctx, candidates)
+
+        // アクセス時の Host からホスト名を抽出し、//host:port/ を生成（IPv6は自動で[]括り）
+        u := &url.URL{Scheme: "http", Host: c.Request().Host}
+        baseHost := u.Hostname() // ポート除去済み
+        for i := range apps {
+            hostPort := net.JoinHostPort(baseHost, strconv.Itoa(apps[i].Port))
+            apps[i].URL = "//" + hostPort + "/"
+        }
+
         sort.Slice(apps, func(i, j int) bool { return apps[i].Port < apps[j].Port })
         dur := time.Since(start)
 
@@ -56,4 +68,3 @@ func New(scanner *scan.Scanner, listenAddr string) *echo.Echo {
 
     return e
 }
-

@@ -63,7 +63,7 @@ After=default.target
 
 [Service]
 Type=simple
-ExecStart=%h/.local/bin/local-webapp-hub -addr 127.0.0.1:8787
+ExecStart=%h/.local/bin/local-webapp-hub -addr :8787
 Restart=on-failure
 RestartSec=2s
 
