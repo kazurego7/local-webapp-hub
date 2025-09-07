@@ -1,4 +1,4 @@
-module local-webapp-hub
+module github.com/kazurego7/local-webapp-hub
 
 go 1.23.0
 

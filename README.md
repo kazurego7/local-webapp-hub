@@ -1,12 +1,25 @@
-# Local Web App Hub (Go)
+# Local Web App Hub
 
-ローカルで動作中のHTTP/HTTPSサーバ（localhost）を自動検出し、一覧表示するシンプルなHubです。リンクをクリックすると、対象のポートへそのままアクセスします（プロキシはしません）。
+ローカルで動作中のHTTP/HTTPSサーバ（localhost）を自動検出し、一覧表示するシンプルなHubです。
+リンクをクリックすると、対象のポートへそのままアクセスします（プロキシはしません）。
 
-内部では以下のライブラリを使用してコードを簡潔にしています。
+## インストール / 起動（ユーザーsystemd）
 
-- `github.com/PuerkitoBio/goquery`（HTMLパースと<title>抽出）
+最小・推奨の導入は「ユーザーsystemd」での常駐です。root不要、ログイン外でも稼働。
 
-## 起動方法
+- クイックインストール（推奨）
+  - `bash install.sh`
+  - これで以下を自動実行します:
+  - 確認/ログ: `systemctl --user status local-webapp-hub`
+
+アンインストール（ユーザー）
+- `systemctl --user disable --now local-webapp-hub.service`
+- `rm ~/.config/systemd/user/local-webapp-hub.service`
+
+
+注意: 本アプリのリンクは `http(s)://localhost:PORT/` 固定のため、リモートから閲覧すると「閲覧者PCのlocalhost」を指します。同一マシンでの利用（ブラウザ→本アプリ）が前提です。公開用途で正しいホスト名リンクにしたい場合はコード変更が必要です。
+
+## ソースからのローカル実行（開発用途）
 
 ビルド時にホームディレクトリ配下へ書き込めない環境でも動くよう、`GOCACHE` をカレント配下に設定しています。
 
