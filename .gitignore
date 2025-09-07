@@ -1,0 +1,14 @@
+# Go build caches
+.gocache/
+
+# Go build output binary (module name = directory name)
+/local-webapp-hub
+
+# OS / editor junk
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*.idea/
+.vscode/
+
